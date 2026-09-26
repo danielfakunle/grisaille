@@ -12,6 +12,150 @@ local function theme_name(temperature, depth)
 end
 
 describe('public colorschemes', function()
+  it('applies color and highlight callbacks in order to editor, terminal, and lualine', function()
+    child.lua([[
+      callback_events = {}
+      require('grisaille').setup({
+        on_colors = function(colors)
+          table.insert(callback_events, 'colors')
+          colors.accent = '#abcdef'
+          colors.terminal1 = '#123456'
+        end,
+        on_highlights = function(highlights, colors)
+          table.insert(callback_events, 'highlights:' .. colors.accent)
+          highlights.Normal.fg = colors.accent
+          highlights.CustomGrisaille = { fg = colors.accent }
+        end,
+      })
+    ]])
+    child.cmd('colorscheme grisaille')
+    expect.equality(child.lua_get('callback_events'), { 'colors', 'highlights:#abcdef' })
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Normal" }).fg'), 0xabcdef)
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "CustomGrisaille" }).fg'), 0xabcdef)
+    expect.equality(child.lua_get('vim.g.terminal_color_1'), '#123456')
+    expect.equality(child.lua_get("require('lualine.themes.grisaille').normal.a.bg"), '#abcdef')
+  end)
+
+  it('propagates adjusted roles to derived colors unless explicitly customized', function()
+    child.lua([[
+      require('grisaille').setup({
+        on_colors = function(colors)
+          colors.accent = '#ffffff'
+          colors.keyword = '#ffffff'
+          colors.error = '#ffffff'
+          colors.terminal1 = '#123456'
+        end,
+      })
+    ]])
+    child.cmd('colorscheme grisaille')
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Visual" }).bg'), 0x3e3e3e)
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "DiagnosticVirtualTextError" }).bg'), 0x303030)
+    expect.equality(child.lua_get('vim.g.terminal_color_1'), '#123456')
+    expect.equality(child.lua_get('vim.g.terminal_color_9'), '#ffffff')
+    expect.equality(child.lua_get("require('lualine.themes.grisaille').normal.a.bg"), '#ffffff')
+  end)
+
+  it('switches either axis from every starting pair and reapplies customization', function()
+    child.lua([[
+      vim.opt.runtimepath:append(vim.fn.getcwd() .. '/deps/lualine.nvim')
+      callback_events = {}
+      require('grisaille').setup({
+        on_colors = function(colors)
+          table.insert(callback_events, { step = 'colors', original = colors.accent })
+          colors.accent = '#abcdef'
+          colors.terminal1 = '#123456'
+        end,
+        on_highlights = function(highlights, colors)
+          table.insert(callback_events, { step = 'highlights', adjusted = colors.accent })
+          highlights.Normal.fg = colors.accent
+        end,
+      })
+    ]])
+    local temperatures = { 'warm', 'balanced', 'cool' }
+    local depths = { 'hard', 'medium', 'soft' }
+    local backgrounds = { hard = 0x141414, medium = 0x1a1a1a, soft = 0x202020 }
+    local function expect_switched_theme(temperature, depth, callback_count)
+      expect.equality(child.lua_get('require("grisaille").active()'), { temperature = temperature, depth = depth })
+      expect.equality(child.lua_get('vim.g.colors_name'), theme_name(temperature, depth))
+      expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Normal" }).bg'), backgrounds[depth])
+      expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Normal" }).fg'), 0xabcdef)
+      expect.equality(child.lua_get('vim.g.terminal_color_1'), '#123456')
+      expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_a_normal" }).bg'), 0xabcdef)
+      expect.equality(child.lua_get('#callback_events'), callback_count)
+      expect.equality(child.lua_get('callback_events[#callback_events - 1].original ~= "#abcdef"'), true)
+      expect.equality(child.lua_get('callback_events[#callback_events].adjusted'), '#abcdef')
+    end
+    for _, temperature in ipairs(temperatures) do
+      for _, depth in ipairs(depths) do
+        child.cmd('colorscheme ' .. theme_name(temperature, depth))
+        child.lua([[require('lualine').setup({ options = { theme = 'auto' } })]])
+        local count = child.lua_get('#callback_events')
+        local next_temperature = temperature == 'warm' and 'cool' or 'warm'
+        child.cmd('GrisailleVariant ' .. next_temperature)
+        expect_switched_theme(next_temperature, depth, count + 2)
+        local next_depth = depth == 'hard' and 'soft' or 'hard'
+        child.cmd('GrisailleDepth ' .. next_depth)
+        expect_switched_theme(next_temperature, next_depth, count + 4)
+      end
+    end
+  end)
+
+  it('completes both command axes', function()
+    child.cmd('colorscheme grisaille')
+    expect.equality(
+      child.lua_get("vim.fn.getcompletion('GrisailleVariant ', 'cmdline')"),
+      { 'warm', 'balanced', 'cool' }
+    )
+    expect.equality(child.lua_get("vim.fn.getcompletion('GrisailleDepth ', 'cmdline')"), { 'hard', 'medium', 'soft' })
+  end)
+
+  it('rejects invalid commands without mutating the active theme or callbacks', function()
+    child.lua([[
+      vim.opt.runtimepath:append(vim.fn.getcwd() .. '/deps/lualine.nvim')
+      callback_count = 0
+      require('grisaille').setup({
+        on_colors = function(colors)
+          callback_count = callback_count + 1
+          colors.accent = '#abcdef'
+          colors.terminal1 = '#123456'
+        end,
+      })
+      function theme_snapshot()
+        local terminals = {}
+        for index = 0, 15 do terminals[index + 1] = vim.g['terminal_color_' .. index] end
+        return {
+          pair = require('grisaille').active(),
+          name = vim.g.colors_name,
+          background = vim.o.background,
+          highlights = vim.api.nvim_get_hl(0, {}),
+          terminals = terminals,
+          lualine_theme = vim.deepcopy(require('lualine.themes.grisaille')),
+          lualine_highlight = vim.api.nvim_get_hl(0, { name = 'lualine_a_normal' }),
+          callback_count = callback_count,
+        }
+      end
+    ]])
+    for _, temperature in ipairs({ 'warm', 'balanced', 'cool' }) do
+      for _, depth in ipairs({ 'hard', 'medium', 'soft' }) do
+        child.cmd('colorscheme ' .. theme_name(temperature, depth))
+        child.lua([[require('lualine').setup({ options = { theme = 'auto' } })]])
+        local before = child.lua_get('theme_snapshot()')
+        for _, command in ipairs({ 'GrisailleVariant icy', 'GrisailleDepth shallow' }) do
+          local result = child.lua_get(string.format(
+            [[(function()
+            local ok, err = pcall(vim.cmd, %q)
+            return { ok = ok, error = tostring(err) }
+          end)()]],
+            command
+          ))
+          expect.equality(result.ok, false)
+          expect.equality(result.error:find('Invalid Grisaille', 1, true) ~= nil, true)
+          expect.equality(child.lua_get('theme_snapshot()'), before)
+        end
+      end
+    end
+  end)
+
   it('loads Balanced Hard by its canonical name', function()
     child.cmd('colorscheme grisaille')
     expect.equality(child.lua_get('vim.g.colors_name'), 'grisaille')

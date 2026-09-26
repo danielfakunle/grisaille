@@ -105,17 +105,30 @@ local function mix(foreground, background, amount)
   return string.format('#%02x%02x%02x', channels[1], channels[2], channels[3])
 end
 
+local function derived(colors)
+  local result = { selection = mix(colors.accent, colors.bg, 0.18) }
+  for _, role in ipairs({ 'error', 'warn', 'ok', 'hint', 'info' }) do
+    result[role .. '_tint'] = mix(colors[role], colors.bg, 0.12)
+  end
+  for index, source in ipairs(terminal_sources) do
+    result['terminal' .. index - 1] = colors[source]
+  end
+  return result
+end
+
+function M.refresh_derived(colors, original)
+  for name, value in pairs(derived(colors)) do
+    if colors[name] == original[name] then colors[name] = value end
+  end
+end
+
 function M.resolve(temperature, depth)
   assert(pigments[temperature], 'Invalid Grisaille temperature: ' .. tostring(temperature))
   assert(grounds[depth], 'Invalid Grisaille depth: ' .. tostring(depth))
 
   local colors = vim.tbl_extend('force', {}, grounds[depth], ink, pigments[temperature], semantic, terminal_only)
-  colors.selection = mix(colors.accent, colors.bg, 0.18)
-  for _, role in ipairs({ 'error', 'warn', 'ok', 'hint', 'info' }) do
-    colors[role .. '_tint'] = mix(colors[role], colors.bg, 0.12)
-  end
-  for index, source in ipairs(terminal_sources) do
-    colors['terminal' .. index - 1] = colors[source]
+  for name, value in pairs(derived(colors)) do
+    colors[name] = value
   end
   return colors
 end
