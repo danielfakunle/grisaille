@@ -84,6 +84,27 @@ local syntax = {
   type = { 'Type', 'Structure', '@constructor', '@module', '@type', '@lsp.type.class', '@lsp.type.namespace' },
 }
 
+local decorative = {
+  LineNr = true,
+  LineNrAbove = true,
+  LineNrBelow = true,
+  SignColumn = true,
+  FoldColumn = true,
+  FloatBorder = true,
+  PmenuBorder = true,
+  BlinkCmpMenuBorder = true,
+  BlinkCmpDocBorder = true,
+  BlinkCmpSignatureHelpBorder = true,
+  WinSeparator = true,
+  VertSplit = true,
+  MsgSeparator = true,
+  NonText = true,
+  Whitespace = true,
+  SpecialKey = true,
+  EndOfBuffer = true,
+  qfLineNr = true,
+}
+
 describe('code and state roles', function()
   it('maps all three syntax engines without typographic emphasis at every temperature and depth', function()
     for _, temperature in ipairs(temperatures) do
@@ -183,14 +204,13 @@ describe('code and state roles', function()
             and group ~= '@comment'
             and group ~= '@comment.documentation'
             and group ~= '@lsp.type.comment'
+            and not decorative[group]
           then
             local foreground = h[group].fg
             local background = h[group].bg or h.Normal.bg
-            expect.equality(
-              contrast(foreground, background) >= 4.49,
-              true,
-              string.format('%s %s: %.3f', name(temperature, depth), group, contrast(foreground, background))
-            )
+            if contrast(foreground, background) < 4.49 then
+              error(string.format('%s %s: %.3f', name(temperature, depth), group, contrast(foreground, background)))
+            end
           end
         end
         -- Comments are deliberately subdued; gutters are decorative.

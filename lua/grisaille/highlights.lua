@@ -133,7 +133,8 @@ local roles = {
 
 local severities = { Error = 'error', Warn = 'warn', Info = 'info', Hint = 'hint', Ok = 'ok' }
 
-function M.get(c)
+function M.get(c, config)
+  config = config or {}
   local groups = {}
   for role, names in pairs(roles) do
     for _, name in ipairs(names) do
@@ -141,6 +142,71 @@ function M.get(c)
     end
   end
   groups.Normal.bg = c.bg
+  for _, name in ipairs(roles.comment) do
+    groups[name].italic = config.italic_comments ~= false
+  end
+
+  groups.NormalNC = { fg = c.fg, bg = c.bg }
+  groups.NormalFloat = { fg = c.fg, bg = c.deep }
+  groups.FloatBorder = { fg = c.edge, bg = c.deep }
+  groups.FloatTitle = { fg = c.accent, bold = true }
+  groups.FloatFooter = { fg = c.dim, bg = c.deep }
+
+  groups.CursorLine = { bg = c.line }
+  groups.CursorColumn = { bg = c.line }
+  groups.ColorColumn = { bg = c.line }
+  groups.LineNr = { fg = c.gutter }
+  groups.LineNrAbove = { fg = c.gutter }
+  groups.LineNrBelow = { fg = c.gutter }
+  groups.CursorLineNr = { fg = c.accent, bold = true }
+  groups.SignColumn = { fg = c.gutter }
+  groups.FoldColumn = { fg = c.gutter }
+  groups.Folded = { fg = c.dim, bg = c.line }
+
+  groups.Pmenu = { fg = c.fg, bg = c.deep }
+  groups.PmenuKind = { fg = c.type, bg = c.deep }
+  groups.PmenuExtra = { fg = c.dim, bg = c.deep }
+  groups.PmenuSel = { fg = c.fg, bg = c.raised }
+  groups.PmenuKindSel = { fg = c.fg, bg = c.raised }
+  groups.PmenuExtraSel = { fg = c.fg, bg = c.raised }
+  groups.PmenuMatch = { fg = c.accent, bold = true }
+  groups.PmenuMatchSel = { fg = c.accent, bold = true }
+  groups.PmenuBorder = { fg = c.edge, bg = c.deep }
+  groups.PmenuSbar = { bg = c.raised }
+  groups.PmenuThumb = { bg = c.border }
+  groups.PreInsert = { fg = c.dim, italic = config.italic_virtual_text == true }
+  for _, name in ipairs({ 'BlinkCmpMenu', 'BlinkCmpDoc', 'BlinkCmpSignatureHelp' }) do
+    groups[name] = { fg = c.fg, bg = c.deep }
+  end
+  for _, name in ipairs({ 'BlinkCmpMenuBorder', 'BlinkCmpDocBorder', 'BlinkCmpSignatureHelpBorder' }) do
+    groups[name] = { fg = c.edge, bg = c.deep }
+  end
+  groups.BlinkCmpMenuSelection = { fg = c.fg, bg = c.raised }
+  groups.SnacksNormal = { link = 'NormalFloat' }
+  groups.SnacksNormalNC = { link = 'NormalFloat' }
+  groups.WildMenu = { fg = c.bg, bg = c.accent }
+
+  groups.StatusLine = { fg = c.fg, bg = c.raised }
+  groups.StatusLineNC = { fg = c.dim, bg = c.line }
+  groups.TabLine = { fg = c.dim, bg = c.line }
+  groups.TabLineFill = { bg = c.line }
+  groups.TabLineSel = { fg = c.fg, bg = c.bg, bold = true }
+  groups.WinBar = { fg = c.dim, bg = c.bg }
+  groups.WinBarNC = { fg = c.dim, bg = c.bg }
+  groups.WinSeparator = { fg = c.border, bg = c.bg }
+  groups.VertSplit = { fg = c.border, bg = c.bg }
+  groups.MsgArea = { fg = c.dim, bg = c.bg }
+  groups.MsgSeparator = { fg = c.border }
+  groups.NonText = { fg = c.edge }
+  groups.Whitespace = { fg = c.border }
+  groups.SpecialKey = { fg = c.edge }
+  groups.EndOfBuffer = { fg = c.line, bg = c.bg }
+  groups.Conceal = { fg = c.dim }
+  groups.Directory = { fg = c.type }
+  groups.Title = { fg = c.accent, bold = true }
+  groups.QuickFixLine = { fg = c.fg, bg = c.raised }
+  groups.qfLineNr = { fg = c.gutter }
+  groups.qfFileName = { fg = c.type }
 
   groups.Visual = { fg = c.fg, bg = c.selection }
   groups.VisualNOS = { fg = c.fg, bg = c.selection }
@@ -162,7 +228,11 @@ function M.get(c)
     for _, prefix in ipairs({ 'Diagnostic', 'DiagnosticSign' }) do
       groups[prefix .. severity] = { fg = c[role] }
     end
-    groups['DiagnosticVirtualText' .. severity] = { fg = c[role], bg = c[role .. '_tint'] }
+    groups['DiagnosticVirtualText' .. severity] = {
+      fg = c[role],
+      bg = c[role .. '_tint'],
+      italic = config.italic_virtual_text == true,
+    }
     groups['DiagnosticLineNr' .. severity] = { fg = c[role], bg = c[role .. '_tint'] }
     groups['DiagnosticUnderline' .. severity] = { undercurl = true, sp = c[role] }
   end
@@ -197,6 +267,36 @@ function M.get(c)
     groups[name] = { fg = c[role] }
   end
   groups['@markup.list.checked'] = { fg = c.ok }
+  groups.LspInlayHint = { fg = c.hint, bg = c.hint_tint, italic = config.italic_virtual_text == true }
+  groups.Italic = { italic = true }
+  groups['@markup.italic'] = { italic = true }
+  groups.Bold = { bold = true }
+  groups['@markup.strong'] = { bold = true }
+
+  if config.dim_inactive then groups.NormalNC.bg = c.deep end
+  if config.transparent then
+    for _, name in ipairs({
+      'Normal',
+      'NormalNC',
+      'NormalFloat',
+      'FloatBorder',
+      'SignColumn',
+      'FoldColumn',
+      'StatusLine',
+      'StatusLineNC',
+      'TabLine',
+      'TabLineFill',
+      'TabLineSel',
+      'WinSeparator',
+      'VertSplit',
+      'EndOfBuffer',
+      'MsgArea',
+      'WinBar',
+      'WinBarNC',
+    }) do
+      groups[name].bg = nil
+    end
+  end
 
   return groups
 end
