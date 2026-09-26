@@ -5,6 +5,12 @@ before_each(function() child.setup() end)
 
 teardown(function() child.stop() end)
 
+local function theme_name(temperature, depth)
+  return 'grisaille'
+    .. (temperature == 'balanced' and '' or '-' .. temperature)
+    .. (depth == 'hard' and '' or '-' .. depth)
+end
+
 describe('public colorschemes', function()
   it('loads Balanced Hard by its canonical name', function()
     child.cmd('colorscheme grisaille')
@@ -106,6 +112,153 @@ describe('public colorschemes', function()
       expect.equality(colors.fg, '#d8d8d8')
       expect.equality(colors.error, '#ea6b8e')
     end
+  end)
+
+  it('exports all ANSI slots without using terminal-only colors in editor highlights', function()
+    local grounds = { hard = '#1c1c1c', medium = '#222222', soft = '#282828' }
+    local pigments = {
+      warm = { '#d27789', '#95aa6a', '#fcba81', '#548fa8' },
+      balanced = { '#968dcb', '#83ad83', '#e6c58a', '#5290a3' },
+      cool = { '#a088cb', '#81ae81', '#e5c493', '#5b8abb' },
+    }
+    for temperature, colors in pairs(pigments) do
+      for depth, line in pairs(grounds) do
+        local name = theme_name(temperature, depth)
+        child.cmd('colorscheme ' .. name)
+        local actual = child.lua_get([[(function()
+          local slots = {}
+          for index = 0, 15 do slots[index + 1] = vim.g['terminal_color_' .. index] end
+          return slots
+        end)()]])
+        expect.equality(actual, {
+          line,
+          colors[1],
+          colors[2],
+          colors[3],
+          '#58bdff',
+          '#a788ca',
+          colors[4],
+          '#959595',
+          '#696969',
+          '#ea6b8e',
+          '#43b16a',
+          '#f0bb3b',
+          '#71d5ff',
+          '#b99bde',
+          '#20c9cb',
+          '#d8d8d8',
+        })
+        local highlights = child.lua_get('vim.api.nvim_get_hl(0, {})')
+        for _, highlight in pairs(highlights) do
+          for _, value in pairs(highlight) do
+            if type(value) == 'number' then
+              expect.equality(value ~= 0xa788ca and value ~= 0xb99bde and value ~= 0x71d5ff, true)
+            end
+          end
+        end
+      end
+    end
+  end)
+
+  it('serves the active resolved palette to lualine for every named theme', function()
+    local grounds = {
+      hard = { deep = '#0d0d0d', raised = '#252525', line = '#1c1c1c' },
+      medium = { deep = '#121212', raised = '#2c2c2c', line = '#222222' },
+      soft = { deep = '#181818', raised = '#323232', line = '#282828' },
+    }
+    local accents = { warm = '#ed9e7d', balanced = '#d8a69f', cool = '#74c5bf' }
+    for temperature, accent in pairs(accents) do
+      for depth, ground in pairs(grounds) do
+        local name = theme_name(temperature, depth)
+        child.cmd('colorscheme ' .. name)
+        local theme = child.lua_get(string.format("require('lualine.themes.%s')", name))
+        expect.equality(theme.normal.a, { fg = ground.deep, bg = accent, gui = 'bold' })
+        expect.equality(theme.normal.b, { fg = '#d8d8d8', bg = ground.raised })
+        expect.equality(theme.normal.c, { fg = '#959595', bg = ground.raised })
+        expect.equality(theme.insert.a, { fg = ground.deep, bg = '#43b16a', gui = 'bold' })
+        expect.equality(theme.visual.a, { fg = ground.deep, bg = '#58bdff', gui = 'bold' })
+        expect.equality(theme.replace.a, { fg = ground.deep, bg = '#ea6b8e', gui = 'bold' })
+        expect.equality(theme.command.a, { fg = ground.deep, bg = '#f0bb3b', gui = 'bold' })
+        expect.equality(theme.terminal.a, { fg = ground.deep, bg = '#20c9cb', gui = 'bold' })
+        expect.equality(theme.inactive, {
+          a = { fg = '#484848', bg = ground.line },
+          b = { fg = '#484848', bg = ground.line },
+          c = { fg = '#484848', bg = ground.line },
+        })
+      end
+    end
+  end)
+
+  it('renders lualine highlights from each publicly loaded palette and refreshes on direct load', function()
+    child.lua([[
+      vim.opt.runtimepath:append(vim.fn.getcwd() .. '/deps/lualine.nvim')
+    ]])
+    child.cmd('colorscheme grisaille')
+    child.lua([[require('lualine').setup({ options = { theme = 'auto' } })]])
+    local grounds = {
+      hard = { deep = 0x0d0d0d, raised = 0x252525 },
+      medium = { deep = 0x121212, raised = 0x2c2c2c },
+      soft = { deep = 0x181818, raised = 0x323232 },
+    }
+    local accents = { warm = 0xed9e7d, balanced = 0xd8a69f, cool = 0x74c5bf }
+    for temperature, accent in pairs(accents) do
+      for depth, ground in pairs(grounds) do
+        child.cmd('colorscheme ' .. theme_name(temperature, depth))
+        expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_a_normal" })').bg, accent)
+        expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_a_normal" })').fg, ground.deep)
+        expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_b_normal" })').bg, ground.raised)
+        expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_a_insert" })').bg, 0x43b16a)
+        local statusline = child.lua_get([[require('lualine').statusline(true)]])
+        expect.equality(statusline:find('%#lualine_a_normal#', 1, true) ~= nil, true)
+      end
+    end
+    child.lua([[require('grisaille').load('warm', 'medium')]])
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_a_normal" })').bg, 0xed9e7d)
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "lualine_b_normal" })').bg, 0x2c2c2c)
+  end)
+
+  it('updates an already loaded lualine theme when the colorscheme changes', function()
+    child.cmd('colorscheme grisaille')
+    child.lua([[
+      cached_theme = require('lualine.themes.grisaille')
+      cached_section = cached_theme.normal.a
+      package.loaded.lualine = {
+        get_config = function() return { options = { theme = 'auto' } } end,
+        setup = function(config)
+          refreshed_theme = require('lualine.themes.' .. vim.g.colors_name).normal.a.bg
+          refreshed_config = config
+        end,
+      }
+      vim.api.nvim_create_autocmd('ColorScheme', { group = vim.api.nvim_create_augroup('lualine', {}), callback = function() end })
+    ]])
+    child.cmd('colorscheme grisaille-cool-soft')
+    expect.equality(child.lua_get('cached_theme.normal.a.bg'), '#74c5bf')
+    expect.equality(child.lua_get('cached_section.bg'), '#74c5bf')
+    expect.equality(child.lua_get('cached_theme.normal.b.bg'), '#323232')
+    expect.equality(child.lua_get('cached_theme.insert.a.fg'), '#181818')
+    expect.equality(child.lua_get('refreshed_theme'), '#74c5bf')
+    expect.equality(child.lua_get('refreshed_config'), { options = { theme = 'auto' } })
+  end)
+
+  it('does not initialize lualine merely because its module was loaded', function()
+    child.lua([[
+      package.loaded.lualine = {
+        get_config = function() return {} end,
+        setup = function() error('lualine was not configured') end,
+      }
+    ]])
+    child.cmd('colorscheme grisaille')
+  end)
+
+  it('does not reconfigure an unrelated lualine theme', function()
+    child.lua([[
+      package.loaded.lualine = {
+        get_config = function() return { options = { theme = 'other-theme' } } end,
+        setup = function() error('unrelated lualine theme was reconfigured') end,
+      }
+      vim.api.nvim_create_autocmd('ColorScheme', { group = vim.api.nvim_create_augroup('lualine', {}), callback = function() end })
+    ]])
+    child.cmd('colorscheme grisaille-warm')
   end)
 
   it('changes only syntax pigments with temperature and ground with depth', function()

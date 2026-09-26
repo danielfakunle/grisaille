@@ -22,11 +22,21 @@ function M.load(temperature, depth)
   for group, highlight in pairs(require('grisaille.highlights').get(colors, config)) do
     vim.api.nvim_set_hl(0, group, highlight)
   end
+  for index = 0, 15 do
+    vim.api.nvim_set_var('terminal_color_' .. index, colors['terminal' .. index])
+  end
+  require('grisaille.lualine').update(colors, config)
   local name = 'grisaille'
     .. (temperature == 'balanced' and '' or '-' .. temperature)
     .. (depth == 'hard' and '' or '-' .. depth)
   active = { temperature = temperature, depth = depth, name = name }
   vim.api.nvim_set_var('colors_name', name)
+  local lualine = package.loaded.lualine
+  if lualine and lualine.get_config and lualine.setup and vim.fn.exists('#lualine#ColorScheme') == 1 then
+    local lualine_config = lualine.get_config()
+    local theme = lualine_config.options.theme
+    if theme == 'auto' or (type(theme) == 'string' and theme:match('^grisaille')) then lualine.setup(lualine_config) end
+  end
 end
 
 return M
