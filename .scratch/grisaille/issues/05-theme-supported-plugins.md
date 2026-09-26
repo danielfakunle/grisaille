@@ -4,8 +4,8 @@
 
 **Blocked by:** 03: Read code and state consistently; 04: Use readable editor surfaces.
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] Cover gitsigns, blink.cmp, Snacks, fzf-lua, which-key, Noice, neo-tree, nvim-tree, netrw, flash, trouble, lazy.nvim, mason, nvim-dap, dap-ui, neotest, mini.nvim, hlchunk, grug-far, diffview, illuminate, treesitter-context, and rainbow-delimiters.
-- [ ] Plugin windows inherit shared float surfaces rather than copying colors; completion windows remain painted in transparent mode even when they do not inherit native completion groups.
-- [ ] Plugin diagnostic, git, and state indicators use semantic roles; observable highlight tests cover representative integrations and transparent surfaces.
+- [x] Cover gitsigns, blink.cmp, Snacks, fzf-lua, which-key, Noice, neo-tree, nvim-tree, netrw, flash, trouble, lazy.nvim, mason, nvim-dap, dap-ui, neotest, mini.nvim, hlchunk, grug-far, diffview, illuminate, treesitter-context, and rainbow-delimiters.
+- [x] Plugin windows inherit shared float surfaces rather than copying colors; completion windows remain painted in transparent mode even when they do not inherit native completion groups.
+- [x] Plugin diagnostic, git, and state indicators use semantic roles; observable highlight tests cover representative integrations and transparent surfaces.
