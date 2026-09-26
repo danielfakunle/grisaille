@@ -14,7 +14,7 @@ Create the MIT-licensed `grisaille.nvim` project for Neovim 0.10 or newer. Grisa
 
 All combinations share an achromatic ground and ink family, one role map, one semantic family, and one contrast contract. Temperature changes syntax and UI-accent pigments without changing their meaning. Depth changes only the ground beneath them. Users select a combination by colorscheme name, configure behavior through `setup()`, and can switch either axis at runtime.
 
-Version 0.1.0 includes complete Neovim highlights, lualine, Bat, Ghostty, and OpenCode. Companion themes are generated from the same palette source. Cendre is available as a pinned, read-only reference submodule at `docs/reference/cendre`, but Grisaille has independent branding, palette values, terminology, and generated output.
+Version 0.1.0 includes complete Neovim highlights, lualine, Bat, Ghostty, and OpenCode. Companion themes are generated from the same palette source. Cendre is available as a tracked, read-only reference snapshot at `docs/reference/cendre`, but Grisaille has independent branding, palette values, terminology, and generated output.
 
 ## User Stories
 
@@ -50,9 +50,9 @@ Version 0.1.0 includes complete Neovim highlights, lualine, Bat, Ghostty, and Op
 30. As a contributor, I want generated extras checked for drift, so that committed themes cannot become stale relative to the palette.
 31. As a contributor, I want external schemas validated against tools' real implementations, so that silently ignored keys fail before release.
 32. As a contributor, I want one high-level smoke suite to load every public theme, so that the behavior users invoke is the behavior tests cover.
-33. As a maintainer, I want Cendre pinned as read-only reference material, so that architectural comparisons are reproducible without coupling the projects.
+33. As a maintainer, I want Cendre tracked as read-only reference material, so that architectural comparisons are reproducible without coupling the projects.
 34. As a maintainer, I want project-level attribution rather than repeated source comments, so that legal attribution is present without implementation clutter.
-35. As a release manager, I want stable and nightly Neovim CI, so that version-specific regressions are caught before release.
+35. As a release manager, I want Neovim 0.10, stable, and nightly CI, so that version-specific regressions are caught before release.
 36. As a release manager, I want a manual visual checklist, so that a mathematically valid palette cannot ship with an obvious experiential regression.
 
 ## Implementation Decisions
@@ -63,7 +63,7 @@ Version 0.1.0 includes complete Neovim highlights, lualine, Bat, Ghostty, and Op
 - Grisaille supports Neovim 0.10 or newer and is dark-only.
 - The license is MIT.
 - Grisaille is a sibling influenced by Cendre's architecture, not a Cendre variant. There is no Cendre configuration compatibility or migration layer.
-- Cendre is pinned as a Git submodule at `docs/reference/cendre`. Contributor instructions mark it read-only; advancing it is a dedicated change.
+- Cendre is a tracked snapshot at `docs/reference/cendre` pinned by its Git tree ID. Contributor instructions mark it read-only; advancing it is a dedicated change.
 - Attribution appears once in a project-level notice and includes the required Cendre MIT copyright/license notice. Source files do not repeat attribution comments.
 
 ### Public Theme Names
@@ -235,8 +235,8 @@ The role lightness order is always `function > accent > literal > keyword > type
 
 - Version 0.1 includes a README and Vim help covering installation, all names, options, commands, role map, exact palette, contrast exceptions, accessibility tradeoffs, integrations, extras installation, attribution, and troubleshooting.
 - Conventional Commits are used from project creation.
-- GitHub Actions runs on Neovim 0.10, stable, and nightly and initializes the Cendre submodule.
-- Version `0.1.0` is tagged manually after automated and manual acceptance pass. Automated release tooling is deferred.
+- GitHub Actions runs on Neovim 0.10, stable, and nightly and verifies the tracked Cendre reference snapshot.
+- Contributions go through pull requests. Merge the release-please pull request for `0.1.0` only after automated and manual acceptance pass; release-please creates the tag and release.
 
 ## Testing Decisions
 
@@ -255,7 +255,7 @@ The role lightness order is always `function > accent > literal > keyword > type
 - For Bat, Ghostty, and OpenCode, assert all nine files exist, internal names are unique, emitted colors belong to the resolved palette, required keys are complete, retired/unknown keys are absent, and committed bytes match a fresh render.
 - Pin the actual Bat, Ghostty, and OpenCode schema sources or shipped presets used to construct schema assertions.
 - Run the smoke suite on Neovim 0.10, stable, and nightly, then run `:helptags` over the help directory.
-- Before tagging, manually compare representative Lua, TypeScript, Rust, Markdown, and JSON buffers across all temperatures and depths. Review normal vision plus Machado protanopia and deuteranopia simulations against Candidate 3. Confirm the approved ranking and character: Balanced is canonical, Warm remains cohesive, and Cool remains crisp without becoming icy.
+- Before merging the release-please pull request, manually compare representative Lua, TypeScript, Rust, Markdown, and JSON buffers across all temperatures and depths. Review normal vision plus Machado protanopia and deuteranopia simulations against Candidate 3. Confirm the approved ranking and character: Balanced is canonical, Warm remains cohesive, and Cool remains crisp without becoming icy.
 - Prior art is Cendre's public-load smoke suite, palette contrast checks, role-map checks, transparent-surface checks, generated drift checks, and schema-pinning tests. Port the behavior, rename the domain, and remove fire-specific assertions.
 
 ## Out of Scope
@@ -270,12 +270,11 @@ The role lightness order is always `function > accent > literal > keyword > type
 - Cendre configuration compatibility, migration tooling, or shared runtime code.
 - Fire-derived hue claims or physical-source derivation.
 - Guaranteeing every syntax role remains uniquely distinguishable under every color-vision deficiency.
-- Automated release publishing before `0.1.0`.
 
 ## Further Notes
 
 - The approved visual source is `theme-palette-prototype-3.html` in the design workspace. The new project must copy the recorded values from this specification, not load or ship the prototype.
 - Candidate review concluded with the normal-vision ranking `Balanced > Warm > Cool`. Balanced reads as exactly neutral on a warm-to-cool scale, Warm remains cohesive, and Cool remains cool without becoming icy.
 - Error and warning were deliberately separated by lightness for color-vision resilience. Their foreground values remain vivid; diagnostic backgrounds use only a 12% mixture to avoid bright full-line blocks.
-- The Cendre reference submodule is architectural evidence, not a source of truth for Grisaille's product decisions.
+- The Cendre reference snapshot is architectural evidence, not a source of truth for Grisaille's product decisions.
 - Apply the local tracker's `ready-for-agent` state to this specification. Ticket decomposition should happen only after the new repository exists or its tracker location is known.

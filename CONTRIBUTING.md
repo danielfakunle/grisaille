@@ -26,7 +26,9 @@ Run `make install` to install the ignored MiniTest dependency, then `make check`
 for formatting, linting, typechecking, and tests. For a focused run, use
 `make test_file FILE=tests/test_grisaille.lua` and `make typecheck`.
 
-Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+Submit changes as pull requests to `main` and wait for CI and review before
+merging. Do not push contribution changes directly to `main`. Use
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
 `feat: add palette`, `fix: correct highlight`, or `docs: clarify setup`.
 Use `!` or a `BREAKING CHANGE:` footer for breaking changes. Release-please
 uses these commits to prepare releases; do not change the release manifest
@@ -34,22 +36,21 @@ just to announce an unreleased version.
 
 ## Preparing 0.1.0
 
-1. Finish the 0.1.0 scope, run `make check`, and confirm the applicable CI
-   checks pass. Perform the manual visual and accessibility review specified
-   in [the release ticket](.scratch/grisaille/issues/09-document-and-verify-release.md).
-2. Review `CHANGELOG.md`, the intended release commit, and existing tags and
-   releases. The existing `grisaille-v0.0.2` release and its manifest entry are
-   the current baseline; do not rewrite them to prepare 0.1.0.
-3. Coordinate the manual tag with the release-please workflow in
-   `.github/workflows/release.yml`. It remains active on pushes to `main` and
-   can create tags and GitHub releases automatically. Check its latest run and
-   confirm `grisaille-v0.1.0` has not already been published before tagging.
-4. Once acceptance is complete and the target commit is on `main`, tag that
-   commit manually with `git tag grisaille-v0.1.0 <commit>` and push it with
-   `git push origin grisaille-v0.1.0`. If release-please has already published
-   that version, do not retag or overwrite it. After a manual tag, reconcile
-   `.release-manifest.json` with the published version in a follow-up change
-   so release-please does not treat 0.1.0 as still unreleased.
-
-The release-please configuration and workflow remain in place; manual tagging
-does not stop automated releases on later pushes to `main`.
+1. Finish the 0.1.0 scope through reviewed pull requests. Run `make check`
+   locally. Confirm the CI matrix passes on Neovim 0.10, stable, and nightly,
+   including the public-load smoke suite, pinned Cendre snapshot check, and
+   Vim help tags. Resolve failed checks before release.
+2. When release-please opens its 0.1.0 release pull request, review its
+   `CHANGELOG.md`, manifest/version changes, and intended release contents
+   against the current `grisaille-v0.0.2` baseline. Do not edit the manifest
+   by hand to announce an unreleased version.
+3. On that release candidate, complete the
+   [visual and accessibility review](docs/visual-review.md) for all five
+   languages, nine themes, and three viewing conditions. Record the reviewer
+   and acceptance decision on the
+   release-please pull request; do not merge while any review cell or CI check
+   is outstanding.
+4. After automated and manual acceptance, merge the release-please pull
+   request. The existing [release workflow](.github/workflows/release.yml)
+   runs on pushes to `main`; release-please creates the tag and GitHub release.
+   Verify the resulting version and tag in its run and on GitHub.

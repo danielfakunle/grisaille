@@ -15,17 +15,28 @@ concurrency:
 
 jobs:
   ci:
-    name: CI
+    name: Neovim ${{ matrix.neovim.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim:
+          - { name: '0.10', version: 'v0.10.4' }
+          - { name: '0.12.4', version: 'v0.12.4' }
+          - { name: stable, version: stable }
+          - { name: nightly, version: nightly }
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Neovim 0.12.4
+      - name: Verify Cendre reference snapshot
+        run: test "$(git rev-parse HEAD:docs/reference/cendre)" = '009ea6d1287dcb83ada5ccf3b6934b959896d6c0'
+
+      - name: Setup Neovim ${{ matrix.neovim.name }}
         uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: v0.12.4
+          version: ${{ matrix.neovim.version }}
 
       - name: Setup LuaJIT
         uses: leafo/gh-actions-lua@v13
@@ -61,5 +72,14 @@ jobs:
       - name: Run Checks
         run: make lint && make typecheck
 
-      - name: Run Tests
+      - name: Run Tests (including public-load smoke suite)
         run: make test
+
+      - name: Verify help tags
+        run: |
+          nvim --headless --clean \
+            -c 'set rtp^=.' \
+            -c 'helptags doc' \
+            -c 'help grisaille' \
+            -c "lua assert(vim.fn.expand('%:t') == 'grisaille.txt')" \
+            -c 'qa!'
