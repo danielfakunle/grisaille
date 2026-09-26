@@ -1,0 +1,224 @@
+*grisaille.txt*                               Grisaille dark colorscheme for Neovim
+
+=============================================================================
+CONTENTS                                                     *grisaille-contents*
+
+  1. Introduction .................................... |grisaille-introduction|
+  2. Installation .................................... |grisaille-installation|
+  3. Theme names ..................................... |grisaille-names|
+  4. Configuration ................................... |grisaille-configuration|
+  5. Commands ........................................ |grisaille-commands|
+  6. Roles and palette ............................... |grisaille-palette|
+  7. Accessibility ................................... |grisaille-accessibility|
+  8. Integrations and extras ......................... |grisaille-integrations|
+  9. Troubleshooting and attribution ................. |grisaille-troubleshooting|
+
+=============================================================================
+1. INTRODUCTION                                         *grisaille-introduction*
+
+Grisaille is an independent, MIT-licensed, dark-only colorscheme for Neovim
+0.10 or newer. Its achromatic structural ground and ink stay fixed across Warm,
+Balanced, and Cool syntax temperatures. Hard, Medium, and Soft change the
+ground beneath those roles. Balanced Hard is the canonical default.
+
+A true-color terminal and 'termguicolors' are recommended. In Lua: >lua
+    vim.opt.termguicolors = true
+<
+
+=============================================================================
+2. INSTALLATION                                         *grisaille-installation*
+
+Add danielfakunle/grisaille to Neovim's 'runtimepath' with a plugin manager.
+With lazy.nvim: >lua
+    {
+      'danielfakunle/grisaille',
+      lazy = false,
+      priority = 1000,
+      config = function()
+        require('grisaille').setup() -- optional
+        vim.cmd.colorscheme('grisaille')
+      end,
+    }
+<
+Or add the checkout to 'runtimepath' before running :colorscheme grisaille.
+The default theme works without calling |grisaille.setup()|.
+
+=============================================================================
+3. THEME NAMES                                                *grisaille-names*
+
+                   Hard                    Medium                    Soft
+ Balanced         grisaille               grisaille-medium          grisaille-soft
+ Warm             grisaille-warm          grisaille-warm-medium     grisaille-warm-soft
+ Cool             grisaille-cool          grisaille-cool-medium     grisaille-cool-soft
+
+Use the exact name, for example :colorscheme grisaille-cool-soft. The active
+name is in vim.g.colors_name. Depth changes only the ground and diff tints;
+syntax and semantic roles do not change with depth.
+
+=============================================================================
+4. CONFIGURATION                                        *grisaille-configuration*
+
+                                                         *grisaille.setup()*
+require('grisaille').setup({opts})
+
+Call setup before loading the colorscheme. All keys are optional:
+
+    transparent           false   Clears editor, float, status, tab, and
+                                  plugin float backgrounds. Pmenu and blink.cmp
+                                  completion menus remain painted for legibility.
+    dim_inactive          false   Uses the deep ground in inactive windows.
+                                  Transparent mode wins when both are enabled.
+    italic_comments       true   Italicizes comment groups.
+    italic_virtual_text  false   Italicizes diagnostic virtual text, inlay
+                                  hints, and related virtual-text groups.
+    on_colors(colors)     unset   Mutates a fresh resolved color table before
+                                  highlights, terminal ANSI colors, and lualine
+                                  are updated. Derived tints and terminal slots
+                                  follow changed roles unless overridden.
+    on_highlights(highlights, colors)
+                          unset   Mutates the complete highlight table before
+                                  groups are applied; colors is the adjusted
+                                  table passed from on_colors.
+
+Example: >lua
+    require('grisaille').setup({
+      transparent = false,
+      on_colors = function(colors) colors.accent = '#beaee1' end,
+      on_highlights = function(highlights, colors)
+        highlights.CursorLineNr = { fg = colors.accent, bold = true }
+      end,
+    })
+    vim.cmd.colorscheme('grisaille')
+<
+Callbacks rerun when either axis switches. Generated companion themes never
+execute user callbacks. Choose a persistent pair with a named colorscheme;
+temperature and depth are not setup options.
+
+=============================================================================
+5. COMMANDS                                                  *grisaille-commands*
+
+                                                   *:GrisailleVariant*
+:GrisailleVariant warm|balanced|cool
+    Switch temperature and preserve depth.
+
+                                                   *:GrisailleDepth*
+:GrisailleDepth hard|medium|soft
+    Switch depth and preserve temperature.
+
+Both commands complete their arguments and apply the new theme immediately.
+Invalid arguments raise an error without changing the active theme, highlights,
+terminal colors, or lualine. All 16 ANSI terminal colors and lualine track the
+active resolved palette. Set up lualine after loading Grisaille for the first
+time; subsequent switches refresh the configured Grisaille/auto lualine theme.
+
+=============================================================================
+6. ROLES AND PALETTE                                         *grisaille-palette*
+
+Ground is achromatic structural background; ink is achromatic foreground.
+The following hex colors are the shipped values, not approximations from
+rounded color-space coordinates.
+
+Depth       deep      bg        line      raised    border    edge
+Hard        #0d0d0d  #141414   #1c1c1c   #252525   #313131   #525252
+Medium      #121212  #1a1a1a   #222222   #2c2c2c   #383838   #5a5a5a
+Soft        #181818  #202020   #282828   #323232   #3e3e3e   #616161
+
+Depth       add       delete    modify
+Hard        #202515   #301d1b   #12262e
+Medium      #262c1b   #372321   #182c35
+Soft        #2d3221   #3e2a28   #1f333b
+
+Ink: fg #d8d8d8 (ordinary text), dim #959595 (operators/punctuation),
+comment #696969 (subdued comments), gutter #484848 (decorative furniture).
+Declared variables and constants use fg; only literal values use literal.
+
+Syntax role     Warm      Balanced  Cool       Meaning
+keyword         #d27789  #968dcb   #a088cb   keywords, flow, storage
+function        #fcba81  #e6c58a   #e5c493   functions, methods, calls
+literal         #95aa6a  #83ad83   #81ae81   literal values
+accent          #ed9e7d  #d8a69f   #74c5bf   properties, fields,
+                                             parameters, UI accents
+type            #548fa8  #5290a3   #5b8abb   types, classes,
+                                             constructors, modules
+
+Semantic roles do not vary by temperature: error #ea6b8e, warn #f0bb3b,
+ok #43b16a, hint #20c9cb, info #58bdff. Diagnostics, diff/git state, and
+informational marks use these rather than syntax roles. In every variant the
+syntax lightness hierarchy is function > accent > literal > keyword > type.
+
+Selection is an 18% sRGB mixture of accent over the active bg with fg text.
+Diagnostic virtual-text tints are 12% mixtures of each semantic color over bg.
+Diff backgrounds use the add/delete/modify colors in the depth table above.
+The terminal-only auxiliary values are #a788ca and bright #b99bde; bright
+info is #71d5ff. They do not color editor syntax or UI roles.
+
+ANSI indices: 0 line, 1 keyword, 2 literal, 3 function, 4 info,
+5 auxiliary, 6 type, 7 dim, 8 comment, 9 error, 10 ok, 11 warn,
+12 bright info, 13 bright auxiliary, 14 hint, 15 fg.
+
+=============================================================================
+7. ACCESSIBILITY                                       *grisaille-accessibility*
+
+Readable text, syntax, diagnostics, and UI target at least 4.5:1 against
+their actual rendered backgrounds, allowing at most 0.01 for 8-bit sRGB
+rounding. Cool type on Soft sits at the 4.50:1 boundary. Comments are an
+intentional exception: below 4.5:1, but at least 2.8:1 at each depth.
+Gutters and decorative marks may remain near 2:1. Completion popups stay
+painted even in transparent mode so their text has a known background;
+transparency otherwise depends on the terminal's own background.
+
+Under Machado-style protanopia and deuteranopia simulation some syntax roles
+converge. This tradeoff is accepted: contrast and hierarchy remain useful,
+diagnostics stay distinguishable, and forcing every hue to separate under all
+simulations would weaken the approved normal-vision palette. Grisaille does
+not claim every role remains uniquely identifiable under all color-vision
+conditions. See the manual review in CONTRIBUTING.md for release acceptance.
+
+=============================================================================
+8. INTEGRATIONS AND EXTRAS                             *grisaille-integrations*
+
+Built-in UI and legacy syntax, Tree-sitter, LSP semantic tokens, diagnostics,
+diff/git, terminal colors, and lualine are covered. Plugin groups include
+gitsigns, blink.cmp, Snacks, fzf-lua, which-key, Noice, neo-tree, nvim-tree,
+netrw, flash, trouble, lazy.nvim, mason, nvim-dap, dap-ui, neotest, mini.nvim,
+hlchunk, grug-far, diffview, illuminate, treesitter-context, and
+rainbow-delimiters. Plugin windows link to NormalFloat and FloatBorder where
+appropriate; completion menus are painted in transparent mode.
+
+Bat, Ghostty, and OpenCode companion themes ship all nine names in extras/.
+The file stem is the exact theme name; they use shipped colors, not callbacks.
+
+Bat: copy extras/bat/*.tmTheme to $(bat --config-dir)/themes/, then run
+`bat cache --build`. Choose with `bat --theme=grisaille-warm` or set BAT_THEME.
+
+Ghostty: copy extensionless extras/ghostty/* to ~/.config/ghostty/themes/
+(or $XDG_CONFIG_HOME/ghostty/themes/) and set `theme = grisaille-warm`.
+
+OpenCode: copy extras/opencode/*.json to ~/.config/opencode/themes/
+(or $XDG_CONFIG_HOME/opencode/themes/) and set `"theme": "grisaille-warm"`
+in opencode.json.
+
+To regenerate after editing the palette, run
+`nvim --headless --clean -l scripts/extras.lua`. The extras test checks the
+committed bytes against a fresh render:
+`make test_file FILE=tests/test_extras.lua`.
+
+=============================================================================
+9. TROUBLESHOOTING AND ATTRIBUTION                 *grisaille-troubleshooting*
+
+E185: Cannot find color scheme: ensure the plugin is on 'runtimepath' before
+`:colorscheme`, and check the exact spelling in |grisaille-names|.
+
+Unexpected terminal colors: use 'termguicolors' and a true-color terminal.
+Transparent mode shows your terminal's background instead of Grisaille's bg.
+
+Callbacks not applied: call |grisaille.setup()| before loading; reload the
+colorscheme after changing setup options. Configure lualine after the first
+load. Missing extras: copy files with their original names; Bat also needs
+`bat cache --build`.
+
+Grisaille is MIT-licensed (LICENSE). Cendre is a read-only architectural
+reference, not a runtime dependency. Its MIT copyright/license notice is in
+NOTICE. Contributions and release checks are documented in CONTRIBUTING.md.
+
+vim:tw=78:ts=8:noet:ft=help:
