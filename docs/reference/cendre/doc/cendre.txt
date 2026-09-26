@@ -1,0 +1,416 @@
+*cendre.txt*                        A dark colorscheme derived from a wood fire
+
+                       one wood fire, taken apart
+                    five pigments, none of them chosen
+
+==============================================================================
+CONTENTS                                                     *cendre-contents*
+
+  1. Introduction ............................. |cendre-introduction|
+  2. Requirements ............................. |cendre-requirements|
+  3. Installation ............................. |cendre-installation|
+  4. Configuration ............................ |cendre-configuration|
+     The cursor ............................... |cendre-cursor|
+     Zig types in plain text .................. |cendre-zls|
+  5. Commands ................................. |cendre-commands|
+  6. Depths ................................... |cendre-depths|
+  7. Palette .................................. |cendre-palette|
+  8. Roles .................................... |cendre-roles|
+  9. Extras ................................... |cendre-extras|
+ 10. Lualine .................................. |cendre-lualine|
+ 11. Extending ................................ |cendre-extending|
+ 12. Tests .................................... |cendre-tests|
+
+==============================================================================
+1. INTRODUCTION                                          *cendre-introduction*
+
+Cendre is a dark colorscheme for Neovim. Dark only, on purpose.
+
+No hue in it was chosen. Every one was computed from something measurable in a
+burning log: Planck's law at 1300 K for the coals, published emission
+wavelengths for the rest, pushed through the CIE 1931 colour matching
+functions into OKLCH.
+
+Lightness and chroma are choices, because a spectral line sits far outside
+sRGB and has to be brought into gamut anyway. Nothing was nudged toward a
+nicer number.
+
+The derivation is shown step by step, and every surface listed, at
+https://cendretheme.com/
+
+==============================================================================
+2. REQUIREMENTS                                          *cendre-requirements*
+
+  - Neovim 0.9 or newer
+  - 'termguicolors' (cendre sets it on load)
+
+A terminal with true colour support. Without it the ANSI slots apply but the
+pigments do not, and the theme is not worth running.
+
+==============================================================================
+3. INSTALLATION                                          *cendre-installation*
+
+With lazy.nvim: >lua
+
+    {
+      "Aejkatappaja/cendre",
+      lazy = false,
+      priority = 1000,
+      config = function()
+        require("cendre").setup({
+          background = "hard",
+          italic_virtual_text = false,
+        })
+      end,
+    }
+<
+Then either let LazyVim pick it up: >lua
+
+    { "LazyVim/LazyVim", opts = { colorscheme = "cendre" } }
+<
+or set it yourself: >lua
+
+    vim.cmd.colorscheme("cendre")
+<
+|cendre.setup()| is optional. Loading the colorscheme without it applies every
+default below.
+
+==============================================================================
+4. CONFIGURATION                                        *cendre-configuration*
+
+                                                            *cendre.setup()*
+require("cendre").setup({opts})
+
+Accepts a table. Every key is optional; pass only what you want to change.
+
+    background          string      default "hard"
+
+        Ground depth: "hard", "medium" or "soft". The pigments never move, so
+        this changes only what sits under them. See |cendre-depths|.
+        An unknown value falls back to "hard" rather than erroring.
+
+    transparent         boolean     default false
+
+        Strips the background from Normal, floats, statusline and tabline, so
+        the terminal shows through. Off by default: the ash bed is a colour
+        the theme derived, so it may as well be on screen.
+
+        The float border keeps its stroke when this is on, because a
+        transparent float with no border has no edge.
+
+        Plugin windows follow, without being named one by one. which-key, the
+        Snacks picker, Noice, fzf-lua and the rest link their windows to
+        `NormalFloat` and their edges to `FloatBorder`, so stripping those two
+        strips every one of them, including plugins released after this file.
+        The completion menu is the exception and stays painted: a transparent
+        popup over code is not readable. blink.cmp points its windows at
+        `BlinkCmpMenu`, `BlinkCmpDoc` and `BlinkCmpSignatureHelp` rather than at
+        `Pmenu` or `NormalFloat`, so those three and their borders are painted
+        too. blink draws no border of its own by default, `border` in its own
+        options turns one on.
+
+        The lualine theme drops its ground too, and keeps the mode block, which
+        is the one fill it ever draws. It reads this option once, when lualine
+        requires it, so `require("cendre").setup()` has to run before
+        `require("lualine").setup()` or the bar loads the painted variant.
+
+    dim_inactive        boolean     default false
+
+        Drops `NormalNC`, the window you are not in, from the editor ground to
+        `bg_deep`. That rung already exists and already carries the meaning:
+        floats and sidebars stand on it, so the theme is saying "not the buffer
+        you are editing" with a colour it uses for exactly that elsewhere.
+
+        The cost is that a file tree and a background split then share one
+        ground. Off by default for that reason: it is worth the trade only if
+        you live in splits more than in a sidebar.
+
+        `SignColumn` and `FoldColumn` keep the editor ground even here, because
+        Neovim has no inactive variant for either. A dimmed window therefore
+        keeps a normal-weight gutter, and `WinSeparator` carries the editor
+        ground too. Nothing a colorscheme can reach fixes that.
+
+        `transparent = true` wins: there is no ground left to lower.
+
+    italic_virtual_text boolean     default false
+
+        Italics on the text the editor adds around yours: `LspInlayHint`,
+        `BlinkCmpGhostText`, `GitSignsCurrentLineBlame`, `NoiceVirtualText`
+        and `SnacksDashboardFooter`. No syntax role is italic at any setting,
+        because every role already keeps a real gap from the others, so
+        italics carry no information there.
+
+        This option was called `italic`. That name read as a switch for the
+        whole theme and never was one, so it is now an alias that warns
+        through |vim.deprecate()|, and it goes away in 2.0.
+
+    italic_comments     boolean     default true
+
+        Italics on comments, and on everything the editor treats as one:
+        `SpecialComment`, `@lsp.type.comment`, `LspCodeLens` and
+        `@markup.quote` follow it too, so a comment does not change shape
+        the moment a language server attaches.
+
+        The two switches are independent. `italic_virtual_text = false` on
+        its own leaves comments italic; set both to false for no italics.
+
+        `Italic` and `@markup.italic` answer to neither. Italic is their
+        whole definition, and they carry no foreground, so stripping it
+        would render `*emphasis*` as body text.
+
+    on_colors           function    default noop
+
+        `function(colors)`. Runs after the palette resolves and before any
+        highlight is built, so mutating a key here changes every group that
+        uses it. >lua
+
+            require("cendre").setup({
+              on_colors = function(c)
+                c.bg0 = "#000000"
+              end,
+            })
+<
+    on_highlights       function    default noop
+
+        `function(highlights, colors)`. Runs last and wins over everything,
+        including `transparent` and the italic switches. >lua
+
+            require("cendre").setup({
+              on_highlights = function(hl, c)
+                hl.Comment = { fg = c.bg5 }
+                hl["@keyword"] = { fg = c.brass, bold = true }
+              end,
+            })
+<
+                                                             *cendre-cursor*
+THE CURSOR
+
+|hl-Cursor|, |hl-lCursor|, |hl-CursorIM| and |hl-TermCursor| all carry the
+accent, and outside |:terminal| Neovim never asks for them. Its default
+'guicursor' names a highlight group only for terminal mode: >
+
+    n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20,
+    t:block-blinkon500-blinkoff500-TermCursor
+<
+With no group on the other parts, the terminal draws its own cursor in its own
+colour. A black cursor on this theme is the terminal's setting, not a missing
+highlight group.
+
+Cendre does not set 'guicursor'. That option carries the cursor's shape and
+its blink rather than its colour, and both are the reader's choice.
+
+To change it, either install the terminal theme for whatever you run, in
+which case the cursor matches in the editor and in the shell because every
+file under `extras/` sets it, or hand the cursor to Neovim: >lua
+
+    vim.opt.guicursor = "n-v-c-sm:block-Cursor,i-ci-ve:ver25-Cursor,"
+      .. "r-cr-o:hor20-Cursor,t:block-blinkon500-blinkoff500-TermCursor"
+<
+                                                                *cendre-zls*
+ZIG TYPES IN PLAIN TEXT
+
+With zls attached, `std.mem.Allocator`, `std.Io` and everything else reached
+through `std` can come out in the plain text colour. zls answers the first
+request for semantic tokens before it has resolved `std`, so it tags those
+names as `variable`, and it never asks Neovim to fetch them again. |:Inspect|
+on one of them shows `@lsp.type.variable.zig` where it should say
+`@lsp.type.struct.zig`. The theme colours both correctly; it just gets told
+the wrong one.
+
+`:lua vim.lsp.semantic_tokens.force_refresh()` fixes the current buffer. To
+have it done on every open: >lua
+
+    vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client.name == "zls" then
+          vim.defer_fn(function()
+            if vim.api.nvim_buf_is_valid(args.buf) then
+              vim.lsp.semantic_tokens.force_refresh(args.buf)
+            end
+          end, 500)
+        end
+      end,
+    })
+<
+On a large project zls may need longer than 500 ms to get through `std`.
+
+==============================================================================
+5. COMMANDS                                                  *cendre-commands*
+
+                                                        *:CendreBackground*
+:CendreBackground [{depth}]
+
+    Switch the ground depth at runtime, no restart. {depth} is "hard",
+    "medium" or "soft"; with no argument it goes back to "hard". Tab
+    completion offers the three.
+
+    An unknown name is rejected with a message and leaves the current depth
+    alone. >
+
+        :CendreBackground soft
+        :CendreBackground
+<
+    The command is registered when the colorscheme loads, not only by
+    |cendre.setup()|, because a bare `colorscheme cendre` with no configuration
+    is a supported way to install this and should not be the way that silently
+    loses the command.
+
+==============================================================================
+6. DEPTHS                                                      *cendre-depths*
+
+Three depths, one palette. The pigments are the identity, so they never move:
+only the seven-step ground under them does. A screenshot at one depth is
+recognisably the same theme as a screenshot at another, which is the point.
+
+    depth     bg0        L       text      comment   dimmest pigment ~
+    hard      #171311    0.191   12.89:1   3.32:1    4.77:1
+    medium    #1d1917    0.217   12.18:1   3.14:1    4.51:1
+    soft      #231f1d    0.243   11.41:1   2.94:1    4.22:1
+
+`hard` is the default. It is deeper than any theme cendre was measured
+against, which is why the ramp above it is finely stepped. `soft` is lifted to
+where the dark themes people keep for years actually sit.
+
+Comments sit under the accessibility floor on purpose. Every dark theme people
+keep for years puts them there, most around 3.3:1, and a comment as loud as
+the code it explains is noise.
+
+==============================================================================
+7. PALETTE                                                    *cendre-palette*
+
+The ground is hue 43°, which is wood ash under a 1300 K flame. Ash is
+spectrally flat, so it lands within a degree of the bare flame.
+
+Ink, shared by every depth:
+
+    fg        #e6d5c2    body text ~
+    fg_dim    #a09384    operators, delimiters
+    comment   #73665b    comments
+    gutter    #4e4641    line numbers, inlay hints
+
+The five pigments, in order of lightness, which is also order of distance
+from the fire:
+
+    name      hue       L       source              ~
+    brass     61.4°     0.838   sodium D 589 nm
+    ember     43.8°     0.754   blackbody 1300 K
+    sap       123.4°    0.721   C2 Swan 563 nm
+    cinder    25.9°     0.665   CaOH band 622 nm
+    frost     227.4°    0.600   C2 Swan 474 nm
+
+Arc 202°, smallest gap 17.6°, chroma 0.072 to 0.115. A fire does not offer
+well-spaced warm hues: cinder, ember and brass sit within 36° of each other
+because that is where calcium, soot and sodium are. They stay legible on
+lightness instead of hue distance.
+
+Diagnostics are a separate family (`error` `warn` `ok` `hint` `info`), all
+carrying more chroma than any pigment, so an error never wears the same red as
+a keyword.
+
+The whole table is available at runtime: >lua
+
+    local colors = require("cendre.palette").get("hard")
+    local name = require("cendre.palette").name("soft")   -- "cendre-soft"
+<
+==============================================================================
+8. ROLES                                                        *cendre-roles*
+
+One role, one pigment. No token depends on bold or italic.
+
+    cinder    keywords, control flow, storage ~
+    ember     properties, fields, parameters, and the UI accent
+    brass     functions, methods, calls
+    sap       every literal value: strings, numbers, booleans, nil
+    frost     types, classes, constructors, modules
+
+Two rules that follow from that:
+
+    - A declared name is not a role. Variables and constant names stay in
+      `fg`; only the value a constant holds takes a pigment.
+    - Punctuation is not a token. Operators, commas and brackets take
+      `fg_dim`.
+
+Orange does syntax work here. Properties, fields and parameters are among the
+most frequent tokens in a real file, so that is where the warmth goes.
+
+==============================================================================
+9. EXTRAS                                                      *cendre-extras*
+
+Every surface beyond the editor ships under `extras/`: terminals, prompts,
+pagers, TUIs, Vim, Helix, Zed, Obsidian and more. The count and the install
+path for each one are listed at https://cendretheme.com/#surfaces
+
+Every one of them is rendered from `lua/cendre/palette.lua` and nothing else,
+so a colour cannot be right in Neovim and stale in a terminal. Hand-editing a
+generated file is a test failure, not a silent divergence. Regenerate with: >
+
+    nvim --headless --noplugin -u NONE -c "set rtp+=." \
+      -c "luafile scripts/extras.lua" -c q
+<
+Each surface ships at all three depths. The unsuffixed file is the depth the
+plugin defaults to, and `-medium` and `-soft` sit beside it. Anything that
+stores a theme name rather than taking it from its filename carries that name
+qualified per depth, or installing two of them collides on one entry.
+
+Inside the editor, these carry groups of their own rather than whatever their
+defaults land on: gitsigns, blink.cmp, Snacks, fzf-lua, which-key, Noice,
+neo-tree, nvim-tree, netrw, flash, trouble, lazy.nvim, mason, nvim-dap and dap-ui,
+neotest, mini.indentscope, mini.hipatterns, hlchunk, grug-far, diffview,
+illuminate, treesitter-context and rainbow-delimiters.
+
+The 16 ANSI slots are exported as `vim.g.terminal_color_0` through
+`vim.g.terminal_color_15`, so |:terminal| matches. Slot 5 is potassium's
+404 nm line, derived the same way as the pigments; it exists because ANSI
+wants six hues where the editor needs five, and it never touches a token.
+
+==============================================================================
+10. LUALINE                                                   *cendre-lualine*
+
+A lualine theme ships with the plugin and follows the active depth: >lua
+
+    require("lualine").setup({ options = { theme = "cendre" } })
+<
+`theme = "auto"` also finds it. The mode colour comes from the semantic
+family, not from the syntax pigments, so the mode block never looks like a
+token.
+
+==============================================================================
+11. EXTENDING                                              *cendre-extending*
+
+|cendre.setup()| exposes two hooks, and the order they run in is what makes
+them useful:
+
+    1. the palette resolves for the chosen depth
+    2. `on_colors` mutates it
+    3. every highlight group is built from the result
+    4. `dim_inactive` lowers `NormalNC`, `transparent` strips backgrounds,
+       the italic switches apply
+    5. `on_highlights` runs, and wins
+
+So `on_colors` is for changing a colour everywhere at once, and
+`on_highlights` is for overriding one group regardless of anything else.
+
+The resolved table is also on the module after a load: >lua
+
+    require("cendre").colors.ember
+<
+==============================================================================
+12. TESTS                                                      *cendre-tests*
+
+The claims in this file are asserted rather than documented: >
+
+    nvim --headless --noplugin -u NONE -c "set rtp+=." \
+      -c "luafile test/smoke.lua"
+<
+It loads every depth through |nvim_set_hl()|, which throws on a missing
+palette key, then checks that the switches behave, that |:CendreBackground|
+swaps the live ground and rejects junk, that the pigments never drift between
+depths, that no pigment collides with a diagnostic, that every contrast ratio
+printed above is what the code actually measures, that the role map lands
+where section 8 says, that no readable token leans on bold or italic, and that
+every committed file under `extras/`, `assets/` and `docs/` matches a fresh
+render of the palette. It exits non-zero on failure.
+
+==============================================================================
+vim:tw=78:ts=8:sw=8:noet:ft=help:norl:
