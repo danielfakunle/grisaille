@@ -175,15 +175,6 @@ function M.get(c, config)
   groups.PmenuSbar = { bg = c.raised }
   groups.PmenuThumb = { bg = c.border }
   groups.PreInsert = { fg = c.dim, italic = config.italic_virtual_text == true }
-  for _, name in ipairs({ 'BlinkCmpMenu', 'BlinkCmpDoc', 'BlinkCmpSignatureHelp' }) do
-    groups[name] = { fg = c.fg, bg = c.deep }
-  end
-  for _, name in ipairs({ 'BlinkCmpMenuBorder', 'BlinkCmpDocBorder', 'BlinkCmpSignatureHelpBorder' }) do
-    groups[name] = { fg = c.edge, bg = c.deep }
-  end
-  groups.BlinkCmpMenuSelection = { fg = c.fg, bg = c.raised }
-  groups.SnacksNormal = { link = 'NormalFloat' }
-  groups.SnacksNormalNC = { link = 'NormalFloat' }
   groups.WildMenu = { fg = c.bg, bg = c.accent }
 
   groups.StatusLine = { fg = c.fg, bg = c.raised }
@@ -298,7 +289,7 @@ function M.get(c, config)
     end
   end
 
-  return groups
+  return vim.tbl_extend('force', groups, require('grisaille.plugins').get(c, config))
 end
 
 return M

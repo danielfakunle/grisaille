@@ -103,6 +103,11 @@ local decorative = {
   SpecialKey = true,
   EndOfBuffer = true,
   qfLineNr = true,
+  HLChunk1 = true,
+  TreesitterContextLineNumber = true,
+  FzfLuaPathLineNr = true,
+  DapUILineNumber = true,
+  GrugFarResultsLineNr = true,
 }
 
 describe('code and state roles', function()
