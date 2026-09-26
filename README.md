@@ -17,7 +17,7 @@ With lazy.nvim:
   config = function()
     require('grisaille').setup() -- optional; defaults work without setup()
     vim.cmd.colorscheme('grisaille')
-  end,
+  end
 }
 ```
 
