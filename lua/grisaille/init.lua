@@ -34,9 +34,7 @@ function M.load(temperature, depth)
     vim.api.nvim_set_var('terminal_color_' .. index, colors['terminal' .. index])
   end
   require('grisaille.lualine').update(colors, config)
-  local name = 'grisaille'
-    .. (temperature == 'balanced' and '' or '-' .. temperature)
-    .. (depth == 'hard' and '' or '-' .. depth)
+  local name = require('grisaille.names').for_axes(temperature, depth)
   active = { temperature = temperature, depth = depth, name = name }
   vim.api.nvim_set_var('colors_name', name)
   local lualine = package.loaded.lualine
