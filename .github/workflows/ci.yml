@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Neovim 0.12.4
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: v0.12.4
+
+      - name: Setup LuaJIT
+        uses: leafo/gh-actions-lua@v13
+        with:
+          luaVersion: luajit-2.1
+
+      - name: Setup LuaRocks
+        uses: leafo/gh-actions-luarocks@v6
+
+      - name: Install Tools
+        run: |
+          luarocks install luacheck
+          mkdir -p "$HOME/lua-language-server"
+          curl -sL "https://github.com/LuaLS/lua-language-server/releases/download/${LUALS_VERSION}/lua-language-server-${LUALS_VERSION}-linux-x64.tar.gz" \
+            | tar -xz -C "$HOME/lua-language-server"
+          echo "$HOME/lua-language-server/bin" >> "$GITHUB_PATH"
+        env:
+          LUALS_VERSION: "3.19.0"
+
+      - name: Resolve Neovim Runtime
+        run: echo "VIMRUNTIME=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')" >> "$GITHUB_ENV"
+
+      - name: Install Dependencies
+        run: make install
+
+      - name: Format
+        uses: JohnnyMorganz/stylua-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: v2.1.0
+          args: --color always --respect-ignores --check .
+
+      - name: Run Checks
+        run: make lint && make typecheck
+
+      - name: Run Tests
+        run: make test
