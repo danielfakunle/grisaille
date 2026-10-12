@@ -199,8 +199,8 @@ function M.get(c, config)
   groups.qfLineNr = { fg = c.gutter }
   groups.qfFileName = { fg = c.type }
 
-  groups.Visual = { fg = c.fg, bg = c.selection }
-  groups.VisualNOS = { fg = c.fg, bg = c.selection }
+  groups.Visual = { bg = c.selection }
+  groups.VisualNOS = { bg = c.selection }
   groups.Search = { fg = c.bg, bg = c['function'] }
   groups.IncSearch = { fg = c.bg, bg = c.accent }
   groups.CurSearch = { fg = c.bg, bg = c.accent }

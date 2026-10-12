@@ -48,11 +48,34 @@ describe('public colorschemes', function()
       })
     ]])
     child.cmd('colorscheme grisaille')
-    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Visual" }).bg'), 0x3e3e3e)
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Visual" }).bg'), 0x283543)
     expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "DiagnosticVirtualTextError" }).bg'), 0x303030)
     expect.equality(child.lua_get('vim.g.terminal_color_1'), '#123456')
     expect.equality(child.lua_get('vim.g.terminal_color_9'), '#ffffff')
     expect.equality(child.lua_get("require('lualine.themes.grisaille').normal.a.bg"), '#ffffff')
+  end)
+
+  it('derives selection from adjusted background while preserving explicit selection overrides', function()
+    child.lua([[
+      require('grisaille').setup({
+        on_colors = function(colors)
+          colors.bg = '#ffffff'
+          colors.type = '#ffffff'
+        end,
+      })
+    ]])
+    child.cmd('colorscheme grisaille')
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "Visual" })'), { bg = 0xd1deec })
+    child.lua([[
+      require('grisaille').setup({
+        on_colors = function(colors)
+          colors.bg = '#ffffff'
+          colors.selection = '#123456'
+        end,
+      })
+    ]])
+    child.cmd('colorscheme grisaille-soft')
+    expect.equality(child.lua_get('vim.api.nvim_get_hl(0, { name = "VisualNOS" })'), { bg = 0x123456 })
   end)
 
   it('switches either axis from every starting pair and reapplies customization', function()
@@ -198,7 +221,7 @@ describe('public colorschemes', function()
       auxiliary = '#a788ca',
       bright_auxiliary = '#b99bde',
       bright_info = '#71d5ff',
-      selection = '#372e2d',
+      selection = '#283543',
       error_tint = '#2e1e23',
       warn_tint = '#2e2819',
       ok_tint = '#1a271e',

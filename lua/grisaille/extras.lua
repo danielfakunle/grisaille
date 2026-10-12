@@ -9,7 +9,6 @@ local ghostty = {
   { 'cursor-color', 'accent' },
   { 'cursor-text', 'bg' },
   { 'selection-background', 'selection' },
-  { 'selection-foreground', 'fg' },
 }
 
 local opencode = {
@@ -102,6 +101,8 @@ local function render_ghostty(colors)
   for _, entry in ipairs(ghostty) do
     lines[#lines + 1] = entry[1] .. ' = ' .. colors[entry[2]]
   end
+  -- Ghostty 1.2+ can preserve each selected cell's existing text color.
+  lines[#lines + 1] = 'selection-foreground = cell-foreground'
   lines[#lines + 1] = ''
   for index = 0, 15 do
     lines[#lines + 1] = 'palette = ' .. index .. '=' .. colors['terminal' .. index]
