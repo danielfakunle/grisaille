@@ -49,7 +49,11 @@ acceptance until it is resolved or explicitly accepted in the release PR.
       distracting highlight.
 - [ ] Error, warning, and other diagnostics remain separate from syntax roles
       and from each other; visual selection and tinted diagnostic text remain
-      legible. Under P and D, allow some syntax hues to converge, but require
+      legible. Selection must remain clearly visible and retain syntax colors in
+      characterwise, linewise, and blockwise modes; review selected types and
+      comments especially on Soft, which has documented lower contrast. Check
+      Ghostty 1.2+ mouse selection and Bat's exported background for consistency.
+      Under P and D, allow some syntax hues to converge, but require
       usable contrast/hierarchy and distinguishable diagnostics.
 - [ ] Compare against the approved Candidate 3 values and character recorded
       in the [project spec](../.scratch/grisaille/spec.md): **Balanced is

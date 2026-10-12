@@ -164,7 +164,7 @@ The role lightness order is always `function > accent > literal > keyword > type
 | info | `0.780 0.134 240.4` | `#58bdff` |
 
 - Syntax roles vary by temperature; semantic roles do not.
-- Visual selection is an 18% sRGB mixture of the active `accent` over the active editor `bg`. Selected text uses `fg` rather than retaining syntax foregrounds, ensuring readable contrast over the chromatic block.
+- Visual selection is a 28% sRGB mixture of fixed cool blue `#5b8abb` over active editor `bg`: Hard `#283543`, Medium `#2c3947`, Soft `#313e4b`, independent of temperature. Visual and VisualNOS set only the background so selected text retains syntax foregrounds. `on_colors` background changes re-derive selection unless explicitly overridden; syntax pigment changes do not alter its hue.
 - Diagnostic virtual-text and line-style backgrounds are a 12% sRGB mixture of their semantic color over the active `bg`.
 - Signs, underlines, and diagnostic foregrounds use full semantic colors.
 - Add, delete, and modify backgrounds are fixed by depth and do not vary with temperature.
@@ -172,7 +172,8 @@ The role lightness order is always `function > accent > literal > keyword > type
 ### Contrast And Accessibility
 
 - Ordinary text, syntax roles, diagnostics, and readable UI target at least `4.5:1` against every background on which they are rendered. Contrast tests allow a maximum `0.01` numerical tolerance for 8-bit sRGB quantization; Cool `type` on Soft is the boundary value and publishes as `4.50:1`.
-- Comments are a documented exception: below `4.5:1`, but never below `2.8:1` at any depth.
+- Comments are a documented exception: below `4.5:1`, but never below `2.8:1` on the normal editor background at any depth.
+- Visual selection is a separate, user-approved exception prioritizing visible selection and preserved syntax ink. Selected punctuation, keywords, types, and Soft literals fall below `4.5:1`; selected comments fall below `2.8:1`. Across all nine combinations, selected non-comment syntax stays at least `3:1` and selected comments at least `2:1`, with the same `0.01` quantization tolerance. Role-specific tested floors are `fg 7.6`, `dim 3.6`, `keyword 3.5`, `function 6.4`, `literal 4.2`, `accent 5.0`, `type 3.0`, `comment 2.0`. Normal-background contrast remains unchanged. See [approved selection preview](../selection/issues/01-selection-preview.md).
 - Gutters and purely decorative marks may remain near `2:1` and are documented exceptions.
 - Text rendered over a tint, selection, menu, or raised block is tested against that actual block rather than only against editor `bg`.
 - Protanopia and deuteranopia simulation use Machado-style matrices for review. Grisaille does not claim every syntax role remains uniquely identifiable under every color-vision deficiency.
@@ -222,6 +223,7 @@ The role lightness order is always `function > accent > literal > keyword > type
 - Extras are generated from the shipped palette through a registry. Generated files are committed but never edited manually.
 - Each generator targets the consuming tool's actual current schema or shipped preset. The pinned schema source/version is documented beside its test.
 - Generated extras ignore user callbacks and remain deterministic.
+- Bat and Ghostty use the same selection background as Neovim without forcing uniform selection ink. Ghostty requires 1.2+ for `selection-foreground = cell-foreground`; Bat exports background-only selection. The OpenCode export has no mapped selection field.
 
 ### Architecture
 
@@ -247,9 +249,9 @@ The role lightness order is always `function > accent > literal > keyword > type
 - Invoke invalid command values and assert a clear failure with no state or highlight mutation.
 - Test setup defaults and each behavioral option through visible highlight behavior rather than internal tables.
 - Assert declared names remain `fg`, punctuation remains `dim`, every syntax role maps consistently, semantic state never uses a syntax role, and no readable token depends on bold or italic.
-- Measure WCAG contrast against the actual rendered background for every readable palette use, allowing only the documented `0.01` quantization tolerance. Assert selected text uses `fg` and clears the floor over every variant/depth selection tint. Pin documented comment and gutter exceptions explicitly so additional exceptions fail.
+- Measure WCAG contrast against the actual rendered background for every readable palette use, allowing only the documented `0.01` quantization tolerance. Assert Visual/VisualNOS are background-only and test retained syntax/comment roles against selection backgrounds across all nine combinations using the explicit selection-only floors above. Pin normal comment and gutter exceptions separately so additional exceptions fail. Ensure completion and picker selection backgrounds remain unchanged.
 - Assert corresponding syntax-role lightness is stable across variants and the required lightness ordering holds.
-- Assert semantic values are identical across variants, diagnostic tints use 12%, selections use 18%, and diff tints vary only by depth.
+- Assert semantic values are identical across variants, diagnostic tints use 12%, selections use 28% fixed cool blue, and diff tints vary only by depth.
 - Assert all 16 terminal slots exist and derive from the documented source roles; auxiliary colors never appear in editor highlight roles.
 - Assert lualine reflects the active palette before and after each runtime switch.
 - For Bat, Ghostty, and OpenCode, assert all nine files exist, internal names are unique, emitted colors belong to the resolved palette, required keys are complete, retired/unknown keys are absent, and committed bytes match a fresh render.

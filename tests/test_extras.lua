@@ -119,7 +119,7 @@ describe('installed companion themes', function()
     end
   end)
 
-  it('uses only palette colors and supported Ghostty keys, including all ANSI slots', function()
+  it('uses palette colors and supported Ghostty keys with syntax-preserving selection', function()
     for _, name in ipairs(names) do
       local colors = palette(name)
       local valid = {}
@@ -142,7 +142,11 @@ describe('installed companion themes', function()
             expect.equality(values[key], nil)
             values[key] = value
           end
-          expect.equality(valid[value], true, line)
+          if key == 'selection-foreground' then
+            expect.equality(value, 'cell-foreground')
+          else
+            expect.equality(valid[value], true, line)
+          end
         end
       end
       expect.equality(vim.tbl_count(keys), vim.tbl_count(ghostty_keys))
@@ -152,6 +156,7 @@ describe('installed companion themes', function()
       end
       expect.equality(values.background, colors.bg)
       expect.equality(values['selection-background'], colors.selection)
+      expect.equality(values['selection-foreground'], 'cell-foreground')
     end
   end)
 
@@ -185,6 +190,8 @@ describe('installed companion themes', function()
       local xml = contents('extras/bat/' .. name .. '.tmTheme')
       expect.equality(xml:match('<key>name</key>%s*<string>(.-)</string>'), name)
       expect.equality(xml:match('^<%?xml') ~= nil, true)
+      expect.equality(xml:match('<key>selection</key>%s*<string>(.-)</string>'), palette(name).selection)
+      expect.equality(xml:find('<key>selectionForeground</key>', 1, true), nil)
       local allowed = {}
       for _, color in pairs(palette(name)) do
         allowed[color] = true

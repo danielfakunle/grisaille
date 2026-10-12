@@ -95,14 +95,21 @@ semantic roles: `error` `#ea6b8e`, `warn` `#f0bb3b`, `ok` `#43b16a`,
 
 Ink is `fg` `#d8d8d8`, `dim` `#959595`, `comment` `#696969`, and
 `gutter` `#484848`. Terminal-only auxiliary colors are `#a788ca`,
-`#b99bde`, and bright info `#71d5ff`. Selection is an 18% sRGB blend of
-`accent` over `bg`; diagnostic tints are 12% blends of semantic colors over
-`bg`. These derived values change with the active combination.
+`#b99bde`, and bright info `#71d5ff`. Selection preserves syntax colors over
+a 28% sRGB blend of fixed cool blue `#5b8abb` over `bg`: Hard `#283543`,
+Medium `#2c3947`, Soft `#313e4b`, independent of temperature. Diagnostic
+tints are 12% blends of semantic colors over `bg`. Changing `bg` through
+`on_colors` re-derives selection unless `selection` is explicitly overridden;
+changing syntax pigments does not change the selection hue.
 
 Readable text, syntax, diagnostics, and UI target at least 4.5:1 contrast on
 their rendered backgrounds (with up to 0.01 tolerance for 8-bit rounding).
-Comments are intentionally quieter, but at least 2.8:1; gutters and decorative
-marks can be near 2:1. These are the documented exceptions. In Machado-style
+Comments are intentionally quieter, but at least 2.8:1 on the normal background;
+gutters and decorative marks can be near 2:1. Visual selection prioritizes a
+visible background and preserved syntax: selected punctuation, keywords, types,
+and Soft literals fall below 4.5:1. Selected non-comment syntax remains at least
+3:1; selected comments at least 2:1 (with the same rounding tolerance).
+These are selection-only exceptions. In Machado-style
 protanopia and deuteranopia simulations, some syntax hues converge; Grisaille
 preserves legible contrast, hierarchy, and diagnostic distinction rather than
 claiming every hue is uniquely identifiable for every viewer.
@@ -127,14 +134,17 @@ The same nine names are available for Bat (`extras/bat/*.tmTheme`), Ghostty
   `BAT_THEME=grisaille-warm`.
 - **Ghostty:** Copy the nine extensionless files into
   `~/.config/ghostty/themes/` (or `$XDG_CONFIG_HOME/ghostty/themes/`), then
-  set `theme = grisaille-warm` in your Ghostty configuration.
+  set `theme = grisaille-warm` in your Ghostty configuration. Requires Ghostty
+  1.2+ for `selection-foreground = cell-foreground`, preserving selected text colors.
 - **OpenCode:** Copy the nine `.json` files into `~/.config/opencode/themes/`
   (or `$XDG_CONFIG_HOME/opencode/themes/`), then set
   `"theme": "grisaille-warm"` in `opencode.json`.
 
 Each file's stem is the exact name to select. Bat also stores the name in its
 plist; Ghostty and OpenCode identify custom themes by filename. Companion
-colors are generated from the shipped palette without user callbacks. To
+colors are generated from the shipped palette without user callbacks. Bat and
+Ghostty share Neovim's selection background without forcing uniform text ink;
+the OpenCode export has no selection field. To
 regenerate after changing the palette, run
 `nvim --headless --clean -l scripts/extras.lua`; `make test_file
 FILE=tests/test_extras.lua` checks committed files against fresh renders.

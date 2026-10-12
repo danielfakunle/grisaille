@@ -146,7 +146,10 @@ ok #43b16a, hint #20c9cb, info #58bdff. Diagnostics, diff/git state, and
 informational marks use these rather than syntax roles. In every variant the
 syntax lightness hierarchy is function > accent > literal > keyword > type.
 
-Selection is an 18% sRGB mixture of accent over the active bg with fg text.
+Selection preserves syntax colors over a 28% sRGB mixture of fixed cool blue
+#5b8abb over bg: Hard #283543, Medium #2c3947, Soft #313e4b, independent of
+temperature. Adjusting bg in on_colors re-derives selection unless selection
+is explicitly overridden. Syntax pigment customization does not change its hue.
 Diagnostic virtual-text tints are 12% mixtures of each semantic color over bg.
 Diff backgrounds use the add/delete/modify colors in the depth table above.
 The terminal-only auxiliary values are #a788ca and bright #b99bde; bright
@@ -162,7 +165,12 @@ ANSI indices: 0 line, 1 keyword, 2 literal, 3 function, 4 info,
 Readable text, syntax, diagnostics, and UI target at least 4.5:1 against
 their actual rendered backgrounds, allowing at most 0.01 for 8-bit sRGB
 rounding. Cool type on Soft sits at the 4.50:1 boundary. Comments are an
-intentional exception: below 4.5:1, but at least 2.8:1 at each depth.
+intentional exception: below 4.5:1, but at least 2.8:1 on normal backgrounds.
+Visual selection preserves syntax while prioritizing a visible background:
+selected punctuation, keywords, types, and Soft literals fall below 4.5:1.
+Selected non-comment syntax remains at least 3:1 and selected comments at least
+2:1, allowing the same 0.01 rounding tolerance. These exceptions apply only
+to selected text; ordinary syntax foregrounds remain unchanged.
 Gutters and decorative marks may remain near 2:1. Completion popups stay
 painted even in transparent mode so their text has a known background;
 transparency otherwise depends on the terminal's own background.
@@ -193,10 +201,13 @@ Bat: copy extras/bat/*.tmTheme to $(bat --config-dir)/themes/, then run
 
 Ghostty: copy extensionless extras/ghostty/* to ~/.config/ghostty/themes/
 (or $XDG_CONFIG_HOME/ghostty/themes/) and set `theme = grisaille-warm`.
+Requires Ghostty 1.2+ for selection-foreground = cell-foreground.
+Bat and Ghostty share Neovim's selection background without replacing text ink.
 
 OpenCode: copy extras/opencode/*.json to ~/.config/opencode/themes/
 (or $XDG_CONFIG_HOME/opencode/themes/) and set `"theme": "grisaille-warm"`
 in opencode.json.
+The OpenCode export has no selection field.
 
 To regenerate after editing the palette, run
 `nvim --headless --clean -l scripts/extras.lua`. The extras test checks the

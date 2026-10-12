@@ -106,7 +106,8 @@ local function mix(foreground, background, amount)
 end
 
 local function derived(colors)
-  local result = { selection = mix(colors.accent, colors.bg, 0.18) }
+  -- A fixed interaction hue keeps selection consistent across temperatures.
+  local result = { selection = mix(pigments.cool.type, colors.bg, 0.28) }
   for _, role in ipairs({ 'error', 'warn', 'ok', 'hint', 'info' }) do
     result[role .. '_tint'] = mix(colors[role], colors.bg, 0.12)
   end

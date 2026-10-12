@@ -155,8 +155,7 @@ describe('code and state roles', function()
         for group, background in pairs({ DiffAdd = 'add', DiffDelete = 'delete', DiffChange = 'modify' }) do
           expect.equality(h[group].bg, hex(c[background]))
         end
-        expect.equality(h.Visual.bg, mixed(c.accent, c.bg, 0.18))
-        expect.equality(h.Visual.fg, hex(c.fg))
+        expect.equality(h.Visual, { bg = mixed('#5b8abb', c.bg, 0.28) })
         expect.equality(h.VisualNOS, h.Visual)
         for group, role in pairs({
           ErrorMsg = 'error',
@@ -169,6 +168,37 @@ describe('code and state roles', function()
         end
         expect.equality(h.Search.bg, hex(c['function']))
         expect.equality(h.IncSearch.bg, hex(c.accent))
+      end
+    end
+  end)
+
+  it('preserves syntax ink over visible blue selection with explicit selection-only contrast floors', function()
+    local selection_floors = {
+      fg = 7.6,
+      dim = 3.6,
+      keyword = 3.5,
+      ['function'] = 6.4,
+      literal = 4.2,
+      accent = 5.0,
+      type = 3.0,
+    }
+    local backgrounds = { hard = 0x283543, medium = 0x2c3947, soft = 0x313e4b }
+    for _, temperature in ipairs(temperatures) do
+      for _, depth in ipairs(depths) do
+        local c, h = applied(temperature, depth)
+        expect.equality(h.Visual, { bg = backgrounds[depth] })
+        expect.equality(h.VisualNOS, h.Visual)
+        expect.equality(h.Visual.bg ~= h.CursorLine.bg, true)
+        for role, groups in pairs(syntax) do
+          for _, group in ipairs(groups) do
+            expect.equality(h[group].fg, hex(c[role]))
+            expect.equality(contrast(h[group].fg, h.Visual.bg) >= selection_floors[role] - 0.01, true, group)
+          end
+        end
+        expect.equality(contrast(h.Comment.fg, h.Visual.bg) >= 1.99, true)
+        -- Selection changes must not affect completion or picker selections.
+        expect.equality(h.PmenuSel.bg, hex(c.raised))
+        expect.equality(h.SnacksPickerCursorLine.bg, hex(c.raised))
       end
     end
   end)
