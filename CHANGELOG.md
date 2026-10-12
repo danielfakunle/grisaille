@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/danielfakunle/grisaille/compare/grisaille-v0.1.0...grisaille-v0.1.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* preserve syntax colors over visible blue selections ([#5](https://github.com/danielfakunle/grisaille/issues/5)) ([13f638b](https://github.com/danielfakunle/grisaille/commit/13f638b1e356042d066612f09da590b2a99f9b60))
+
 ## [0.1.0](https://github.com/danielfakunle/grisaille/compare/grisaille-v0.0.2...grisaille-v0.1.0) (2026-09-26)
 
 
